@@ -28,6 +28,44 @@
 #  define _(msg)    msg
 #endif
 
+/**
+ * \enum CborError
+ * \relates <cbor.h>
+ * The CborError enum contains the possible error values used by the CBOR encoder and decoder.
+ *
+ * \value CborNoError                   No error occurred
+ * \omitvalue CborUnknownError
+ * \value CborErrorUnknownLength        Request for the length of an array, map or string whose length is not provided in the CBOR stream
+ * \value CborErrorAdvancePastEOF       Not enough data in the stream to decode item (decoding would advance past end of stream)
+ * \value CborErrorIO                   An I/O error occurred, probably due to an out-of-memory situation
+ * \value CborErrorGarbageAtEnd         Bytes exist past the end of the CBOR stream
+ * \value CborErrorUnexpectedEOF        End of stream reached unexpectedly
+ * \value CborErrorUnexpectedBreak      A CBOR break byte was found where not expected
+ * \value CborErrorUnknownType          An unknown type (future extension to CBOR) was found in the stream
+ * \value CborErrorIllegalType          An invalid type was found while parsing a chunked CBOR string
+ * \value CborErrorIllegalNumber        An illegal initial byte (encoding unspecified additional information) was found
+ * \value CborErrorIllegalSimpleType    An illegal encoding of a CBOR Simple Type of value less than 32 was found
+ * \omitvalue CborErrorUnknownSimpleType
+ * \omitvalue CborErrorUnknownTag
+ * \omitvalue CborErrorInappropriateTagForType
+ * \omitvalue CborErrorDuplicateObjectKeys
+ * \value CborErrorInvalidUtf8TextString Illegal UTF-8 encoding found while parsing CBOR Text String
+ * \value CborErrorTooManyItems         Too many items were added to CBOR map or array of pre-determined length
+ * \value CborErrorTooFewItems          Too few items were added to CBOR map or array of pre-determeined length
+ * \value CborErrorDataTooLarge         Data item size exceeds TinyCBOR's implementation limits
+ * \value CborErrorNestingTooDeep       Data item nesting exceeds TinyCBOR's implementation limits
+ * \omitvalue CborErrorUnsupportedType
+ * \value CborErrorJsonObjectKeyIsAggregate Conversion to JSON failed because the key in a map is a CBOR map or array
+ * \value CborErrorJsonObjectKeyNotString Conversion to JSON failed because the key in a map is not a text string
+ * \value CborErrorOutOfMemory          During CBOR encoding, the buffer provided is insufficient for encoding the data item;
+ *                                      in other situations, TinyCBOR failed to allocate memory
+ * \value CborErrorInternalError        An internal error occurred in TinyCBOR
+ */
+
+/**
+ * \relates <cbor.h>
+ * Returns the error string corresponding to the CBOR error condition \a error.
+ */
 const char *cbor_error_string(CborError error)
 {
     switch (error) {

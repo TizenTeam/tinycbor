@@ -39,18 +39,25 @@
 #endif
 
 /**
- * \typedef CborValue
- * This type contains one value parsed from the CBOR stream.
+ * \defgroup CborParsing Parsing CBOR streams
+ * \brief Group of functions used to parse CBOR streams.
  *
- * To get the actual type, use cbor_value_get_type(). Then extract the value
- * using one of the corresponding functions: cbor_value_get_boolean(), cbor_value_get_int64(),
- * cbor_value_get_int(), cbor_value_copy_string(), cbor_value_get_array(), cbor_value_get_map(),
- * cbor_value_get_double(), cbor_value_get_float().
+ * ### Write how to determine the end pointer
+ * ### Write how to do limited-buffer windowed decoding
+ */
+
+/**
+ * \addtogroup CborParsing
+ * @{
+ */
+
+/**
+ * \struct CborValue
  *
- * In C++ and C11 modes, you can additionally use the cbor_value_get_integer()
- * and cbor_value_get_floating_point() generic functions.
+ * This type contains one value parsed from the CBOR stream. Each CborValue
+ * behaves as an iterator in a StAX-style parser.
  *
- * \omit
+ * \if privatedocs
  * Implementation details: the CborValue contains these fields:
  * \list
  *   \li ptr: pointer to the actual data
@@ -58,7 +65,7 @@
  *   \li extra: partially decoded integer value (0, 1 or 2 bytes)
  *   \li remaining: remaining items in this collection after this item or UINT32_MAX if length is unknown
  * \endlist
- * \endomit
+ * \endif
  */
 
 static CborError extract_length(const CborParser *parser, const uint8_t **ptr, size_t *len)
@@ -236,9 +243,6 @@ uint64_t _cbor_value_decode_int64_internal(const CborValue *value)
  * process. It is not thread-safe to share one CborParser among multiple
  * threads iterating at the same time, but the object can be copied so multiple
  * threads can iterate.
- *
- * ### Write how to determine the end pointer
- * ### Write how to do limited-buffer windowed decoding
  */
 CborError cbor_parser_init(const uint8_t *buffer, size_t size, int flags, CborParser *parser, CborValue *it)
 {
@@ -250,6 +254,27 @@ CborError cbor_parser_init(const uint8_t *buffer, size_t size, int flags, CborPa
     it->remaining = 1;      // there's one type altogether, usually an array or map
     return preparse_value(it);
 }
+
+/**
+ * \fn bool cbor_value_at_end(const CborValue *it)
+ *
+ * Returns true if \a it has reached the end of the iteration, usually when
+ * advancing after the last item in an array or map. In the case of the
+ * outermost CborValue object, this function returns true after decoding a
+ * single element.
+ *
+ * \sa cbor_value_advance(), cbor_value_is_valid()
+ */
+
+/**
+ * \fn bool cbor_value_is_valid(const CborValue *it)
+ *
+ * Returns true if the iterator \a it contains a valid value. Invalid iterators
+ * happen when iteration reaches the end of a container (see \ref
+ * cbor_value_at_end()) or when a search function resulted in no matches.
+ *
+ * \sa cbor_value_advance(), cbor_valie_at_end(), cbor_value_get_type()
+ */
 
 /**
  * Advances the CBOR value \a it by one fixed-size position. Fixed-size types
@@ -406,6 +431,129 @@ CborError cbor_value_leave_container(CborValue *it, const CborValue *recursed)
     it->ptr = recursed->ptr;
     return preparse_next_value(it);
 }
+
+
+/**
+ * \fn CborType cbor_value_get_type(const CborValue *value)
+ *
+ * Returns the type of the CBOR value that the iterator \a value points to. If
+ * \a value does not point to a valid value, this function returns \ref
+ * CborInvalidType.
+ *
+ * TinyCBOR also provides functions to test directly if a given CborValue object
+ * is of a given type, like \ref cbor_value_is_text_string and \ref{cbor_value_is_null}.
+ *
+ * \sa cbor_value_is_valid()
+ */
+
+/**
+ * \fn bool cbor_value_is_null(const CborValue *value)
+ *
+ * Returns true if the iterator \a value is valid and points to a CBOR null type.
+ *
+ * \sa cbor_value_is_valid(), cbor_value_is_undefined()
+ */
+
+/**
+ * \fn bool cbor_value_is_undefined(const CborValue *value)
+ *
+ * Returns true if the iterator \a value is valid and points to a CBOR undefined type.
+ *
+ * \sa cbor_value_is_valid(), cbor_value_is_null()
+ */
+
+/**
+ * \fn bool cbor_value_is_boolean(const CborValue *value)
+ *
+ * Returns true if the iterator \a value is valid and points to a CBOR boolean
+ * type (true or false).
+ *
+ * \sa cbor_value_is_valid(), cbor_value_get_boolean()
+ */
+
+/**
+ * \fn CborError cbor_value_get_boolean(const CborValue *value, bool *result)
+ *
+ * Retrieves the boolean value that \a value points to and stores it in \a
+ * result. If the iterator \a value does not point to a boolean value, the
+ * behavior is undefined, so checking with \ref cbor_value_get_type or with
+ * \ref cbor_value_is_boolean is recommended.
+ *
+ * \sa cbor_value_get_type(), cbor_value_is_valid(), cbor_value_is_boolean()
+ */
+
+/**
+ * \fn bool cbor_value_is_simple_type(const CborValue *value)
+ *
+ * Returns true if the iterator \a value is valid and points to a CBOR Simple Type
+ * type (other than true, false, null and undefined).
+ *
+ * \sa cbor_value_is_valid(), cbor_value_get_simple_type()
+ */
+
+/**
+ * \fn CborError cbor_value_get_simple_type(const CborValue *value, uint8_t *result)
+ *
+ * Retrieves the CBOR Simple Type value that \a value points to and stores it
+ * in \a result. If the iterator \a value does not point to a simple_type
+ * value, the behavior is undefined, so checking with \ref cbor_value_get_type
+ * or with \ref cbor_value_is_simple_type is recommended.
+ *
+ * \sa cbor_value_get_type(), cbor_value_is_valid(), cbor_value_is_simple_type()
+ */
+
+/**
+ * \fn bool cbor_value_is_integer(const CborValue *value)
+ *
+ * Returns true if the iterator \a value is valid and points to a CBOR integer
+ * type.
+ *
+ * \sa cbor_value_is_valid(), cbor_value_get_int, cbor_value_get_int64, cbor_value_get_uint64, cbor_value_get_raw_integer
+ */
+
+/**
+ * \fn bool cbor_value_is_unsigned_integer(const CborValue *value)
+ *
+ * Returns true if the iterator \a value is valid and points to a CBOR unsigned
+ * integer type (positive values or zero).
+ *
+ * \sa cbor_value_is_valid(), cbor_value_get_uint64()
+ */
+
+/**
+ * \fn bool cbor_value_is_negative_integer(const CborValue *value)
+ *
+ * Returns true if the iterator \a value is valid and points to a CBOR negative
+ * integer type.
+ *
+ * \sa cbor_value_is_valid(), cbor_value_get_int, cbor_value_get_int64, cbor_value_get_raw_integer
+ */
+
+/**
+ * \fn CborError cbor_value_get_int(const CborValue *value, int *result)
+ *
+ * Retrieves the CBOR integer value that \a value points to and stores it in \a
+ * result. If the value contained in the CBOR stream is too large for type
+ * \c{int}, the value is silently converted and the high parts are discarded.
+ * If the iterator \a value does not point to an integer value, the behavior
+ * is undefined, so checking with \ref cbor_value_get_type or with \ref
+ * cbor_value_is_integer is recommended.
+ *
+ * \sa cbor_value_get_type(), cbor_value_is_valid(), cbor_value_is_integer()
+ */
+
+/**
+ * \fn CborError cbor_value_get_uint64(const CborValue *value, uint64_t *result)
+ *
+ * Retrieves the CBOR integer value that \a value points to and stores it in \a
+ * result. If the value contained in the CBOR stream is too large for type
+ * \c{int}, the value is silently converted and the high parts are discarded.
+ * If the iterator \a value does not point to an integer value, the behavior
+ * is undefined, so checking with \ref cbor_value_get_type or with \ref
+ * cbor_value_is_integer is recommended.
+ *
+ * \sa cbor_value_get_type(), cbor_value_is_valid(), cbor_value_is_integer()
+ */
 
 /**
  * Calculates the length of the string in \a value and stores the result in \a
@@ -736,3 +884,5 @@ CborError cbor_value_get_half_float(const CborValue *value, void *result)
     memcpy(result, &v, sizeof(v));
     return CborNoError;
 }
+
+/** @} */
